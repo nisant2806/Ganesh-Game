@@ -22,8 +22,17 @@
       <p class="tagline">Connect Bappa to the sweet.</p>
       <div class="elephant-art" aria-hidden="true"><span>🐘</span><b>✦</b><i>✧</i></div>
       <p class="levels-note">500 levels of Ganesh puzzle fun</p>
+      <div id="playerProfileCard" class="player-profile-bar" data-action="openLogin" role="button" tabindex="0" title="Click to edit profile">
+        <div class="profile-avatar">👤</div>
+        <div class="profile-meta">
+          <strong id="homePlayerName">Guest Player</strong>
+          <span id="homePlayerState">📍 Tap to set State & Name</span>
+        </div>
+        <button class="profile-switch-btn" type="button" data-action="openLogin">Login / Edit</button>
+      </div>
       <div class="home-actions">
         <button class="button primary" data-action="play">▶ <span id="playLabel">PLAY</span></button>
+        <button class="button secondary" data-action="leaderboard">🏆 LEADERBOARD</button>
         <button class="button secondary" data-action="levels">▦ LEVELS</button>
         <button class="button text-button" data-action="howto">How to play <span>→</span></button>
       </div>
@@ -35,14 +44,16 @@
         <button class="icon-button" data-action="home" aria-label="Back to home">←</button>
         <div class="brand-small"><span>🕉️</span><strong>MODAK <em>PATH</em></strong></div>
         <div class="nav-right">
+          <button class="icon-button" data-action="leaderboard" aria-label="Leaderboard" title="Leaderboard">🏆</button>
           <button class="icon-button" data-action="sound" aria-label="Toggle sound">🔊</button>
           <button class="icon-button" data-action="levels" aria-label="Select level">▦</button>
         </div>
       </header>
 
-      <!-- Screenshot-matched Game Header Bar -->
+      <!-- Screenshot-matched Game Header Bar with Live Timer -->
       <div class="game-header-bar">
         <div class="pill-badge pill-level">Level <span id="levelNumber">5</span></div>
+        <div class="pill-badge pill-timer" id="timerBadge" title="Timing">⏱️ <span id="gameTimer">00:00</span></div>
         <div class="pill-badge pill-moves">Moves: <span id="moveCount">0</span></div>
         <div class="pill-badge pill-blocks" id="blocksBadge" title="Cover every block to win!">Blocks: <span id="blocksCount">1/13</span></div>
         <div class="header-stars" id="headerStars">
@@ -75,17 +86,141 @@
       <div id="levelGroups" class="level-groups"></div>
     </section>
 
+    <!-- Complete Modal with Timing Rank & Leaderboard Trigger -->
     <div id="overlay" class="overlay hidden" role="dialog" aria-modal="true">
       <div class="modal" id="completeModal">
         <div class="confetti" aria-hidden="true">✦　•　✧　•　✦</div>
         <div class="modal-icon">🎉</div><p class="eyebrow">LEVEL COMPLETE</p><h2>Bappa reached<br>the sweet!</h2><p class="blessing">🐘 Ganpati Bappa Morya!</p>
-        <div id="newBest" class="new-best hidden">🏆 NEW BEST!</div><div id="stars" class="stars">★★★</div>
-        <div class="result-stats"><span><b id="resultMoves">0</b><small>MOVES</small></span><span><b id="resultTime">0s</b><small>TIME</small></span><span><b id="resultBest">—</b><small>BEST</small></span></div>
-        <div class="modal-actions"><button class="button primary" data-action="next">NEXT LEVEL <span>→</span></button><button class="button secondary" data-action="retry">RETRY</button><button class="button text-button" data-action="levels">Back to levels</button></div>
+        <div id="newBest" class="new-best hidden">🏆 NEW BEST TIME!</div>
+        <div id="resultRankBadge" class="rank-badge hidden">🏆 <span id="resultRankText">Rank #1 on Leaderboard!</span></div>
+        <div id="stars" class="stars">★★★</div>
+        <div class="result-stats">
+          <span><b id="resultMoves">0</b><small>MOVES</small></span>
+          <span><b id="resultTime">0s</b><small>TIME</small></span>
+          <span><b id="resultBest">—</b><small>BEST TIME</small></span>
+        </div>
+        <div class="modal-actions">
+          <button class="button primary" data-action="next">NEXT LEVEL <span>→</span></button>
+          <button class="button secondary" data-action="leaderboard">🏆 VIEW LEADERBOARD</button>
+          <button class="button secondary" data-action="retry">RETRY</button>
+          <button class="button text-button" data-action="levels">Back to levels</button>
+        </div>
       </div>
     </div>
 
-    <div id="howtoModal" class="overlay hidden" role="dialog" aria-modal="true"><div class="modal howto"><button class="close-button" data-action="closeHowto">×</button><p class="eyebrow">GET STARTED</p><h2>How to play</h2><div class="steps"><div><b>1</b><span>🐘</span><p>Start at<br><strong>Ganesh Ji</strong></p></div><div><b>2</b><span>🪨</span><p>Must clear every<br><strong>obstacle first</strong></p></div><div><b>3</b><span>🍬</span><p>Then reach the<br><strong>sweet to win!</strong></p></div></div><button class="button primary" data-action="playFromHowto">LET'S PLAY <span>→</span></button></div></div>
+    <!-- How-To Modal -->
+    <div id="howtoModal" class="overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal howto">
+        <button class="close-button" data-action="closeHowto">×</button>
+        <p class="eyebrow">GET STARTED</p>
+        <h2>How to play</h2>
+        <div class="steps">
+          <div><b>1</b><span>🐘</span><p>Start at<br><strong>Ganesh Ji</strong></p></div>
+          <div><b>2</b><span>🪨</span><p>Must clear every<br><strong>obstacle first</strong></p></div>
+          <div><b>3</b><span>🍬</span><p>Then reach the<br><strong>sweet to win!</strong></p></div>
+        </div>
+        <button class="button primary" data-action="playFromHowto">LET'S PLAY <span>→</span></button>
+      </div>
+    </div>
+
+    <!-- Login / Player Profile Modal (Only Name and State) -->
+    <div id="loginModal" class="overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal login-modal">
+        <button class="close-button" data-action="closeLogin" aria-label="Close modal">×</button>
+        <div class="modal-icon">🪔</div>
+        <p class="eyebrow">PLAYER LOGIN</p>
+        <h2>Join the Race</h2>
+        <p class="login-subtitle">Enter your name and state to climb the live timing leaderboard!</p>
+        <form id="loginForm" class="login-form">
+          <div class="form-field">
+            <label for="playerNameInput">Player Name <span class="req">*</span></label>
+            <input type="text" id="playerNameInput" name="playerName" placeholder="e.g. Aarav Sharma" maxlength="24" required autocomplete="name" />
+          </div>
+          <div class="form-field">
+            <label for="playerStateSelect">Your State <span class="req">*</span></label>
+            <select id="playerStateSelect" name="playerState" required>
+              <option value="" disabled selected>Select your state...</option>
+              <option value="Andhra Pradesh">Andhra Pradesh</option>
+              <option value="Arunachal Pradesh">Arunachal Pradesh</option>
+              <option value="Assam">Assam</option>
+              <option value="Bihar">Bihar</option>
+              <option value="Chhattisgarh">Chhattisgarh</option>
+              <option value="Delhi">Delhi</option>
+              <option value="Goa">Goa</option>
+              <option value="Gujarat">Gujarat</option>
+              <option value="Haryana">Haryana</option>
+              <option value="Himachal Pradesh">Himachal Pradesh</option>
+              <option value="Jharkhand">Jharkhand</option>
+              <option value="Karnataka">Karnataka</option>
+              <option value="Kerala">Kerala</option>
+              <option value="Madhya Pradesh">Madhya Pradesh</option>
+              <option value="Maharashtra">Maharashtra</option>
+              <option value="Manipur">Manipur</option>
+              <option value="Meghalaya">Meghalaya</option>
+              <option value="Mizoram">Mizoram</option>
+              <option value="Nagaland">Nagaland</option>
+              <option value="Odisha">Odisha</option>
+              <option value="Punjab">Punjab</option>
+              <option value="Rajasthan">Rajasthan</option>
+              <option value="Sikkim">Sikkim</option>
+              <option value="Tamil Nadu">Tamil Nadu</option>
+              <option value="Telangana">Telangana</option>
+              <option value="Tripura">Tripura</option>
+              <option value="Uttar Pradesh">Uttar Pradesh</option>
+              <option value="Uttarakhand">Uttarakhand</option>
+              <option value="West Bengal">West Bengal</option>
+              <option value="Chandigarh">Chandigarh</option>
+              <option value="Jammu and Kashmir">Jammu and Kashmir</option>
+              <option value="Ladakh">Ladakh</option>
+              <option value="Other / Global">Other / Global</option>
+            </select>
+          </div>
+          <button type="submit" class="button primary login-submit-btn">SAVE & START PLAYING <span>→</span></button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Dynamic Timing Leaderboard Modal -->
+    <div id="leaderboardModal" class="overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal leaderboard-modal">
+        <button class="close-button" data-action="closeLeaderboard" aria-label="Close leaderboard">×</button>
+        <div class="lb-header">
+          <div class="modal-icon lb-icon">🏆</div>
+          <p class="eyebrow">SPEEDRUN RANKINGS</p>
+          <h2>Timing Leaderboard</h2>
+          <p class="lb-subtitle">Sorted by fastest completion times across all states</p>
+        </div>
+
+        <!-- Leaderboard Level Filters -->
+        <div class="lb-filters" id="lbFilters">
+          <button class="lb-filter-chip active" data-filter="all">⚡ All Levels</button>
+          <button class="lb-filter-chip" data-filter="1">Level 1</button>
+          <button class="lb-filter-chip" data-filter="2">Level 2</button>
+          <button class="lb-filter-chip" data-filter="3">Level 3</button>
+          <div class="lb-select-wrapper">
+            <select id="lbSelectLevel" class="lb-select" aria-label="Select level filter">
+              <option value="">More levels...</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Podium for Top 3 (1st, 2nd, 3rd) -->
+        <div class="lb-podium" id="lbPodium"></div>
+
+        <!-- Leaderboard Rows List -->
+        <div class="lb-list-container">
+          <div class="lb-table-header">
+            <span>RANK & PLAYER</span>
+            <span>STATE</span>
+            <span>TIME</span>
+          </div>
+          <div class="lb-list" id="lbList"></div>
+        </div>
+
+        <!-- Sticky User Standing Bar -->
+        <div class="lb-user-bar" id="lbUserBar"></div>
+      </div>
+    </div>
   </main>
   <script src="app.js"></script>
 </body>

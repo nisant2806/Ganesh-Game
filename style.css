@@ -840,6 +840,19 @@ h1 em, h2 em, .brand-small em {
   margin-top: 6px;
 }
 
+.rank-badge {
+  display: inline-block;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  margin: 6px auto 0;
+  box-shadow: 0 2px 6px rgba(217, 119, 6, 0.15);
+}
+
 .result-stats {
   display: flex;
   justify-content: center;
@@ -931,6 +944,517 @@ h1 em, h2 em, .brand-small em {
   color: var(--ink);
 }
 
+/* =========================================================
+   Player Profile Bar (Home Screen)
+   ========================================================= */
+.player-profile-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fffdf9;
+  border: 1.5px solid var(--board-frame-border);
+  border-radius: 20px;
+  padding: 8px 16px;
+  margin: 0 auto 16px;
+  width: min(100%, 320px);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(162, 91, 47, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.player-profile-bar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(162, 91, 47, 0.14);
+  border-color: var(--orange);
+}
+
+.profile-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffe3c4, #ffd49e);
+  color: var(--orange-dark);
+  font-size: 1.25rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.8), 0 2px 6px rgba(217, 105, 0, 0.15);
+}
+
+.profile-meta {
+  flex: 1;
+  text-align: left;
+  min-width: 0;
+}
+
+.profile-meta strong {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-meta span {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-switch-btn {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--orange-dark);
+  background: #fff3e2;
+  border: 1px solid #f6d8a4;
+  border-radius: 999px;
+  padding: 5px 12px;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.player-profile-bar:hover .profile-switch-btn {
+  background: var(--orange);
+  color: #fff;
+  border-color: var(--orange);
+}
+
+/* =========================================================
+   Live Timer Pill in Game Header
+   ========================================================= */
+.pill-timer {
+  background: #8e3913;
+  min-width: 82px;
+  justify-content: center;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.pill-timer span {
+  font-weight: 800;
+}
+
+/* =========================================================
+   Login / Player Profile Modal
+   ========================================================= */
+.login-modal {
+  width: min(100%, 390px);
+  padding: 28px 24px;
+}
+
+.login-subtitle {
+  color: var(--muted);
+  font-size: 0.82rem;
+  margin: 8px 0 20px;
+  line-height: 1.4;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: left;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+}
+
+.form-field .req {
+  color: var(--orange);
+}
+
+.form-field input,
+.form-field select {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1.5px solid var(--board-frame-border);
+  background: #fffdf9;
+  font-family: inherit;
+  font-size: 0.92rem;
+  color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(255, 105, 0, 0.2);
+  background: #fff;
+}
+
+.login-submit-btn {
+  margin-top: 8px;
+  width: 100%;
+}
+
+/* =========================================================
+   Leaderboard Modal & Dynamic Timing Rankings
+   ========================================================= */
+.leaderboard-modal {
+  width: min(100%, 520px);
+  max-height: 90dvh;
+  padding: 24px 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.lb-header {
+  margin-bottom: 14px;
+  flex-shrink: 0;
+}
+
+.lb-icon {
+  font-size: 2.5rem;
+  margin: 0 0 4px;
+}
+
+.leaderboard-modal h2 {
+  font-size: 1.85rem;
+}
+
+.lb-subtitle {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 4px 0 0;
+}
+
+/* Filters */
+.lb-filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 2px 10px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+}
+
+.lb-filter-chip {
+  background: #fff;
+  border: 1.5px solid var(--board-frame-border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.lb-filter-chip:hover {
+  border-color: var(--orange);
+}
+
+.lb-filter-chip.active {
+  background: var(--orange);
+  color: #fff;
+  border-color: var(--orange);
+  box-shadow: 0 3px 8px rgba(255, 105, 0, 0.25);
+}
+
+.lb-select-wrapper {
+  position: relative;
+  display: inline-flex;
+}
+
+.lb-select {
+  height: 32px;
+  padding: 0 24px 0 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--board-frame-border);
+  background: #fff url("data:image/svg+xml;utf8,<svg fill='%238c685b' height='14' viewBox='0 0 24 24' width='14' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>") no-repeat right 8px center;
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--ink);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+}
+
+.lb-select:focus {
+  border-color: var(--orange);
+}
+
+/* Podium for Top 3 */
+.lb-podium {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  margin: 6px 0 14px;
+  padding: 10px 8px 4px;
+  background: linear-gradient(180deg, rgba(255, 245, 230, 0.7) 0%, rgba(254, 237, 213, 0.9) 100%);
+  border-radius: 18px;
+  border: 1px solid var(--board-frame-border);
+  flex-shrink: 0;
+}
+
+.podium-slot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.podium-avatar {
+  font-size: 1.4rem;
+  position: relative;
+  margin-bottom: 2px;
+}
+
+.podium-medal {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  font-size: 1rem;
+}
+
+.podium-name {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--ink);
+  max-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.podium-state {
+  font-size: 0.64rem;
+  color: var(--muted);
+  max-width: 90px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.podium-time {
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin-top: 3px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+.podium-slot.first .podium-time {
+  background: #fef08a;
+  color: #854d0e;
+  border: 1px solid #facc15;
+}
+
+.podium-slot.second .podium-time {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.podium-slot.third .podium-time {
+  background: #ffedd5;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+}
+
+.podium-slot.first {
+  order: 2;
+  transform: translateY(-6px);
+}
+.podium-slot.second {
+  order: 1;
+}
+.podium-slot.third {
+  order: 3;
+}
+
+/* List Container & Table Rows */
+.lb-list-container {
+  flex: 1;
+  min-height: 140px;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1.5px solid var(--board-frame-border);
+  border-radius: 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+.lb-table-header {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  align-items: center;
+  padding: 8px 14px;
+  background: #fff8ee;
+  border-bottom: 1px solid var(--board-frame-border);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  text-align: left;
+}
+
+.lb-table-header span:last-child {
+  text-align: right;
+}
+
+.lb-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  align-items: center;
+  padding: 9px 14px;
+  border-bottom: 1px solid #f5e9d9;
+  font-size: 0.8rem;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.lb-row:last-child {
+  border-bottom: none;
+}
+
+.lb-row:hover {
+  background: #fffbf5;
+}
+
+.lb-row.user-row {
+  background: #fff7ed;
+  border-left: 3px solid var(--orange);
+  font-weight: 700;
+}
+
+.lb-player-col {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.lb-rank-badge {
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: var(--muted);
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.lb-rank-badge.top-1 { color: #d97706; }
+.lb-rank-badge.top-2 { color: #64748b; }
+.lb-rank-badge.top-3 { color: #b45309; }
+
+.lb-player-details {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.lb-player-name {
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lb-you-tag {
+  background: var(--orange);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.lb-state-col {
+  display: flex;
+  align-items: center;
+}
+
+.lb-state-pill {
+  background: #fff3e3;
+  color: var(--pill-bg);
+  border: 1px solid #f8dec0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+.lb-time-col {
+  text-align: right;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--orange-dark);
+  font-size: 0.86rem;
+}
+
+.lb-empty {
+  padding: 30px 16px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+/* Sticky Current User Footer in Leaderboard */
+.lb-user-bar {
+  margin-top: 10px;
+  padding: 8px 14px;
+  background: #fff3e2;
+  border: 1.5px solid #f8d39c;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+.lb-user-bar strong {
+  color: var(--orange-dark);
+}
+
+.control-button.hint.exhausted {
+  opacity: 0.6;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
 /* Responsiveness: Small Screens & Mobile */
 @media (max-width: 640px) {
   :root {
@@ -941,32 +1465,46 @@ h1 em, h2 em, .brand-small em {
     padding: 10px 8px;
   }
 
+  .player-profile-bar {
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
   .game-header-bar {
     margin: 4px auto 10px;
-    gap: 5px;
+    gap: 4px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 2px;
   }
 
   .pill-badge {
-    padding: 6px 12px;
-    font-size: 0.78rem;
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    gap: 3px;
   }
 
   .pill-level {
-    min-width: 70px;
+    min-width: 65px;
+  }
+
+  .pill-timer {
+    min-width: 72px;
   }
 
   .pill-moves {
-    min-width: 78px;
+    min-width: 70px;
   }
 
   .header-stars {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     gap: 1px;
   }
 
   .round-reset-btn {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
   }
 
   .instruction {
@@ -982,6 +1520,19 @@ h1 em, h2 em, .brand-small em {
 
   .level-groups {
     grid-template-columns: 1fr;
+  }
+
+  .leaderboard-modal {
+    padding: 18px 12px;
+  }
+
+  .lb-table-header, .lb-row {
+    grid-template-columns: 1.5fr 1fr 0.9fr;
+    padding: 8px 10px;
+  }
+
+  .podium-name, .podium-state {
+    max-width: 72px;
   }
 }
 

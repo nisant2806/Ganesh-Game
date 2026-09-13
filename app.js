@@ -11,6 +11,12 @@ let startedAt = 0;
 let timer = null;
 let audioCtx = null;
 
+// New state: 3 hints in every level, user profile, timing leaderboard
+let levelHints = 3;
+let currentUser = loadUser();
+let pendingPlay = false;
+let activeLbFilter = "all";
+
 const $ = id => document.getElementById(id);
 
 function loadSave() {
@@ -23,6 +29,286 @@ function loadSave() {
 
 function persist() {
   localStorage.setItem("modak-path-save", JSON.stringify(save));
+}
+
+// ----------------------------------------------------
+// User Profile (Only Name and State)
+// ----------------------------------------------------
+function loadUser() {
+  try {
+    const raw = localStorage.getItem("modak-path-user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveUser(user) {
+  currentUser = user;
+  localStorage.setItem("modak-path-user", JSON.stringify(user));
+  updateProfileUI();
+}
+
+function updateProfileUI() {
+  const nameEl = $("homePlayerName");
+  const stateEl = $("homePlayerState");
+  if (!nameEl || !stateEl) return;
+  if (currentUser && currentUser.name) {
+    nameEl.textContent = currentUser.name;
+    stateEl.textContent = "📍 " + (currentUser.state || "India");
+    const btn = document.querySelector(".profile-switch-btn");
+    if (btn) btn.textContent = "Switch";
+  } else {
+    nameEl.textContent = "Guest Player";
+    stateEl.textContent = "📍 Tap to set State & Name";
+    const btn = document.querySelector(".profile-switch-btn");
+    if (btn) btn.textContent = "Login";
+  }
+}
+
+function openLogin(thenPlay = false) {
+  pendingPlay = thenPlay;
+  if (currentUser) {
+    $("playerNameInput").value = currentUser.name || "";
+    $("playerStateSelect").value = currentUser.state || "";
+  } else {
+    $("playerNameInput").value = "";
+    $("playerStateSelect").selectedIndex = 0;
+  }
+  $("loginModal").classList.remove("hidden");
+  setTimeout(() => {
+    $("playerNameInput")?.focus();
+  }, 100);
+}
+
+function closeLogin() {
+  $("loginModal").classList.add("hidden");
+  pendingPlay = false;
+}
+
+// ----------------------------------------------------
+// Live Stopwatch & Timer Formatting
+// ----------------------------------------------------
+function formatTimer(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function updateLiveTimer() {
+  if (!startedAt) return;
+  const elapsed = (Date.now() - startedAt) / 1000;
+  const timerEl = $("gameTimer");
+  if (timerEl) {
+    timerEl.textContent = formatTimer(elapsed);
+  }
+}
+
+function updateHintHUD() {
+  const countEl = $("hintCount");
+  if (countEl) countEl.textContent = levelHints;
+  const btn = document.querySelector(".control-button.hint");
+  if (btn) {
+    btn.classList.toggle("exhausted", levelHints <= 0);
+  }
+}
+
+// ----------------------------------------------------
+// Timing-based Leaderboard System
+// ----------------------------------------------------
+const SEED_LEADERBOARD = [
+  { id: "s1", name: "Aarav Sharma", state: "Maharashtra", level: 1, time: 2.7, formattedTime: "2.7s", moves: 12, date: "Today" },
+  { id: "s2", name: "Diya Patel", state: "Gujarat", level: 1, time: 3.2, formattedTime: "3.2s", moves: 12, date: "Today" },
+  { id: "s3", name: "Rohan Gowda", state: "Karnataka", level: 1, time: 3.9, formattedTime: "3.9s", moves: 13, date: "Yesterday" },
+  { id: "s4", name: "Ananya Sen", state: "West Bengal", level: 1, time: 4.6, formattedTime: "4.6s", moves: 14, date: "2 days ago" },
+  { id: "s5", name: "Kabir Mehra", state: "Delhi", level: 1, time: 5.4, formattedTime: "5.4s", moves: 15, date: "3 days ago" },
+  
+  { id: "s6", name: "Tanvi Rathore", state: "Rajasthan", level: 2, time: 3.8, formattedTime: "3.8s", moves: 14, date: "Today" },
+  { id: "s7", name: "Vikram Gill", state: "Punjab", level: 2, time: 4.7, formattedTime: "4.7s", moves: 14, date: "Today" },
+  { id: "s8", name: "Priya Nair", state: "Kerala", level: 2, time: 5.5, formattedTime: "5.5s", moves: 15, date: "Yesterday" },
+  { id: "s9", name: "Aditya Varma", state: "Telangana", level: 2, time: 6.3, formattedTime: "6.3s", moves: 16, date: "2 days ago" },
+
+  { id: "s10", name: "Sneha Das", state: "Odisha", level: 3, time: 5.1, formattedTime: "5.1s", moves: 15, date: "Today" },
+  { id: "s11", name: "Kavya Iyer", state: "Tamil Nadu", level: 3, time: 6.0, formattedTime: "6.0s", moves: 15, date: "Today" },
+  { id: "s12", name: "Aryan Singh", state: "Uttar Pradesh", level: 3, time: 7.2, formattedTime: "7.2s", moves: 16, date: "Yesterday" },
+
+  { id: "s13", name: "Devendra Joshi", state: "Maharashtra", level: 4, time: 6.8, formattedTime: "6.8s", moves: 16, date: "Today" },
+  { id: "s14", name: "Pooja Hegde", state: "Karnataka", level: 5, time: 8.4, formattedTime: "8.4s", moves: 18, date: "Today" }
+];
+
+function loadLeaderboard() {
+  try {
+    const raw = localStorage.getItem("modak-path-leaderboard");
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  localStorage.setItem("modak-path-leaderboard", JSON.stringify(SEED_LEADERBOARD));
+  return [...SEED_LEADERBOARD];
+}
+
+function saveLeaderboard(lb) {
+  localStorage.setItem("modak-path-leaderboard", JSON.stringify(lb));
+}
+
+function recordLeaderboardEntry(lvl, timeSec, moves) {
+  const user = currentUser || { name: "Guest Player", state: "India" };
+  const lb = loadLeaderboard();
+  const formattedTime = timeSec < 60 ? `${timeSec.toFixed(1)}s` : `${Math.floor(timeSec / 60)}m ${(timeSec % 60).toFixed(0)}s`;
+
+  // Check if player has existing record on this level
+  const existingIdx = lb.findIndex(item => item.name.toLowerCase() === user.name.toLowerCase() && item.level === lvl);
+  let isNewBestTime = false;
+
+  if (existingIdx !== -1) {
+    if (timeSec < lb[existingIdx].time) {
+      lb[existingIdx].time = timeSec;
+      lb[existingIdx].formattedTime = formattedTime;
+      lb[existingIdx].moves = moves;
+      lb[existingIdx].state = user.state;
+      lb[existingIdx].date = "Just now";
+      isNewBestTime = true;
+    }
+  } else {
+    lb.push({
+      id: "run-" + Date.now(),
+      name: user.name,
+      state: user.state,
+      level: lvl,
+      time: timeSec,
+      formattedTime: formattedTime,
+      moves: moves,
+      date: "Just now"
+    });
+    isNewBestTime = true;
+  }
+
+  saveLeaderboard(lb);
+
+  // Calculate user's ranking on this level
+  const levelRuns = lb.filter(i => i.level === lvl).sort((a, b) => a.time - b.time);
+  const rank = levelRuns.findIndex(i => i.name.toLowerCase() === user.name.toLowerCase()) + 1;
+
+  return { rank: rank > 0 ? rank : 1, total: levelRuns.length, isNewBestTime };
+}
+
+function openLeaderboard(filter = "all") {
+  activeLbFilter = filter;
+  populateLeaderboardDropdown();
+  renderLeaderboard();
+  $("leaderboardModal").classList.remove("hidden");
+}
+
+function closeLeaderboard() {
+  $("leaderboardModal").classList.add("hidden");
+}
+
+function populateLeaderboardDropdown() {
+  const select = $("lbSelectLevel");
+  if (!select) return;
+  select.innerHTML = '<option value="">More levels...</option>';
+  const maxLvl = Math.max(10, save.current + 5);
+  for (let i = 1; i <= Math.min(500, maxLvl); i++) {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.textContent = `Level ${i}`;
+    if (String(activeLbFilter) === String(i)) opt.selected = true;
+    select.appendChild(opt);
+  }
+}
+
+function renderLeaderboard() {
+  const lb = loadLeaderboard();
+  const podiumEl = $("lbPodium");
+  const listEl = $("lbList");
+  const userBarEl = $("lbUserBar");
+
+  // Update active chips
+  document.querySelectorAll(".lb-filter-chip").forEach(chip => {
+    chip.classList.toggle("active", chip.dataset.filter === String(activeLbFilter));
+  });
+
+  // Filter and sort entries by fastest timing (time ascending)
+  let entries = [...lb];
+  if (activeLbFilter !== "all") {
+    const lvlNum = parseInt(activeLbFilter, 10);
+    entries = entries.filter(e => e.level === lvlNum);
+  }
+  entries.sort((a, b) => a.time - b.time);
+
+  // Render Podium (Top 3)
+  if (entries.length >= 1) {
+    const top3 = entries.slice(0, 3);
+    const slots = [
+      { rank: 2, item: top3[1], medal: "🥈", cls: "second" },
+      { rank: 1, item: top3[0], medal: "🥇", cls: "first" },
+      { rank: 3, item: top3[2], medal: "🥉", cls: "third" }
+    ];
+
+    podiumEl.innerHTML = slots.map(s => {
+      if (!s.item) return `<div class="podium-slot ${s.cls}"></div>`;
+      return `
+        <div class="podium-slot ${s.cls}">
+          <div class="podium-avatar">👤<span class="podium-medal">${s.medal}</span></div>
+          <div class="podium-name" title="${s.item.name}">${s.item.name}</div>
+          <div class="podium-state" title="${s.item.state}">📍 ${s.item.state}</div>
+          <div class="podium-time">⏱️ ${s.item.formattedTime}</div>
+        </div>
+      `;
+    }).join("");
+    podiumEl.classList.remove("hidden");
+  } else {
+    podiumEl.innerHTML = "";
+    podiumEl.classList.add("hidden");
+  }
+
+  // Render List
+  if (entries.length === 0) {
+    listEl.innerHTML = `<div class="lb-empty">No times recorded for this level yet.<br>Be the first to set a speedrun record! 🚀</div>`;
+  } else {
+    listEl.innerHTML = entries.map((item, idx) => {
+      const rank = idx + 1;
+      const isUser = currentUser && item.name.toLowerCase() === currentUser.name.toLowerCase();
+      const rankBadgeClass = rank <= 3 ? `top-${rank}` : "";
+      return `
+        <div class="lb-row ${isUser ? "user-row" : ""}">
+          <div class="lb-player-col">
+            <span class="lb-rank-badge ${rankBadgeClass}">#${rank}</span>
+            <div class="lb-player-details">
+              <span class="lb-player-name" title="${item.name}">${item.name}</span>
+              ${isUser ? '<span class="lb-you-tag">YOU</span>' : ''}
+            </div>
+          </div>
+          <div class="lb-state-col">
+            <span class="lb-state-pill" title="${item.state}">📍 ${item.state}</span>
+          </div>
+          <div class="lb-time-col">
+            ⏱️ ${item.formattedTime}
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Sticky User Standing Bar
+  if (currentUser && currentUser.name) {
+    const userEntry = entries.find(e => e.name.toLowerCase() === currentUser.name.toLowerCase());
+    if (userEntry) {
+      const userRank = entries.indexOf(userEntry) + 1;
+      userBarEl.innerHTML = `
+        <span>👤 <strong>${currentUser.name}</strong> (📍 ${currentUser.state})</span>
+        <span>Best: <strong>${userEntry.formattedTime}</strong> · Rank: <strong>#${userRank}</strong></span>
+      `;
+    } else {
+      userBarEl.innerHTML = `
+        <span>👤 <strong>${currentUser.name}</strong> (📍 ${currentUser.state})</span>
+        <span>Not ranked on this level yet · Complete to enter!</span>
+      `;
+    }
+  } else {
+    userBarEl.innerHTML = `
+      <span>👤 Playing as <strong>Guest</strong></span>
+      <button class="profile-switch-btn" type="button" data-action="openLogin">Login to Save Rank</button>
+    `;
+  }
 }
 
 // Procedural Web Audio synthesizer
@@ -413,6 +699,11 @@ function startGame(n = level) {
   drawing = false;
   startedAt = Date.now();
   clearInterval(timer);
+  updateLiveTimer();
+  timer = setInterval(updateLiveTimer, 200);
+
+  levelHints = 3; // 3 hints in every level
+  updateHintHUD();
 
   show("gameScreen");
   $("levelNumber").textContent = level;
@@ -663,25 +954,39 @@ function stopDrawing() {
 
 function complete() {
   drawing = false;
+  clearInterval(timer);
   playSound("win");
 
   const moves = path.length - 1;
-  const time = Math.max(1, Math.round((Date.now() - startedAt) / 1000));
+  const timeSec = Math.max(0.2, (Date.now() - startedAt) / 1000);
+  const timeSecRound = Math.round(timeSec);
+  const formattedTime = timeSec < 60 ? `${timeSec.toFixed(1)}s` : `${Math.floor(timeSec / 60)}m ${(timeSec % 60).toFixed(0)}s`;
+
   const old = save.completed[level];
   const optimalMoves = puzzle.totalBlocks - 1;
   const stars = moves === optimalMoves ? 3 : moves <= optimalMoves + 4 ? 2 : 1;
 
-  save.completed[level] = { stars, moves, time };
+  save.completed[level] = { stars, moves, time: timeSecRound, exactTime: timeSec.toFixed(1) };
   if (level < 500) {
     save.current = Math.max(save.current, level + 1);
   }
   persist();
 
+  // Record into live Timing Leaderboard
+  const lbResult = recordLeaderboardEntry(level, timeSec, moves);
+
   $("resultMoves").textContent = moves;
-  $("resultTime").textContent = `${time}s`;
-  $("resultBest").textContent = old?.moves || moves;
+  $("resultTime").textContent = formattedTime;
+  $("resultBest").textContent = old?.exactTime ? `${old.exactTime}s` : formattedTime;
   $("stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
-  $("newBest").classList.toggle("hidden", !!old && old.moves <= moves);
+  $("newBest").classList.toggle("hidden", !lbResult.isNewBestTime);
+
+  const rankBadge = $("resultRankBadge");
+  if (rankBadge) {
+    rankBadge.classList.remove("hidden");
+    $("resultRankText").textContent = `Rank #${lbResult.rank} on Leaderboard!`;
+  }
+
   $("overlay").classList.remove("hidden");
 }
 
@@ -697,6 +1002,10 @@ function undo() {
 
 function reset() {
   path = [{ r: 0, c: 0 }];
+  levelHints = 3; // Reset hints to 3 on every level reset
+  updateHintHUD();
+  startedAt = Date.now();
+  updateLiveTimer();
   playSound("step");
   drawPath();
   $("moveCount").textContent = 0;
@@ -704,7 +1013,7 @@ function reset() {
 }
 
 function hint() {
-  if (!puzzle || save.hints < 1) return;
+  if (!puzzle || levelHints < 1) return;
 
   // Find next cell on solution path
   let nextCell = null;
@@ -721,9 +1030,9 @@ function hint() {
   }
 
   if (nextCell) {
-    save.hints--;
-    persist();
-    $("hintCount").textContent = save.hints;
+    levelHints--;
+    updateHintHUD();
+    playSound("step");
     const cell = cellAt(nextCell.r, nextCell.c);
     if (cell) {
       cell.classList.add("hint-cell");
@@ -793,10 +1102,24 @@ document.addEventListener("click", e => {
   const action = e.target.closest("[data-action]")?.dataset.action;
   if (!action) return;
 
-  if (action === "play") startGame(save.current);
+  if (action === "play") {
+    if (!currentUser) {
+      openLogin(true);
+    } else {
+      startGame(save.current);
+    }
+  }
+  if (action === "openLogin") openLogin(false);
+  if (action === "closeLogin") closeLogin();
+  if (action === "leaderboard") openLeaderboard("all");
+  if (action === "closeLeaderboard") closeLeaderboard();
   if (action === "playFromHowto") {
     $("howtoModal").classList.add("hidden");
-    startGame(1);
+    if (!currentUser) {
+      openLogin(true);
+    } else {
+      startGame(1);
+    }
   }
   if (action === "howto") $("howtoModal").classList.remove("hidden");
   if (action === "closeHowto") $("howtoModal").classList.add("hidden");
@@ -836,6 +1159,8 @@ document.addEventListener("keydown", e => {
   if (e.key === "Escape") {
     $("overlay").classList.add("hidden");
     $("howtoModal").classList.add("hidden");
+    $("loginModal").classList.add("hidden");
+    $("leaderboardModal").classList.add("hidden");
   }
 });
 
@@ -849,7 +1174,47 @@ window.addEventListener("orientationchange", () => {
   }, 100);
 });
 
+// Login Form Submission
+const loginForm = $("loginForm");
+if (loginForm) {
+  loginForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const nameInput = $("playerNameInput");
+    const stateSelect = $("playerStateSelect");
+    const name = nameInput ? nameInput.value.trim() : "";
+    const state = stateSelect ? stateSelect.value.trim() : "";
+    if (!name || !state) return;
+
+    saveUser({ name, state });
+    closeLogin();
+
+    if (pendingPlay) {
+      pendingPlay = false;
+      startGame(save.current);
+    }
+  });
+}
+
+// Leaderboard Filter Chips & Select Level Listener
+document.addEventListener("click", e => {
+  const chip = e.target.closest(".lb-filter-chip");
+  if (chip && chip.dataset.filter) {
+    openLeaderboard(chip.dataset.filter);
+  }
+});
+
+const lbSelect = $("lbSelectLevel");
+if (lbSelect) {
+  lbSelect.addEventListener("change", e => {
+    if (e.target.value) {
+      openLeaderboard(e.target.value);
+    }
+  });
+}
+
 // Initialize UI
+updateProfileUI();
+updateHintHUD();
 $("playLabel").textContent = save.current > 1 ? `CONTINUE · ${save.current}` : "PLAY";
 document.querySelectorAll('[data-action="sound"]').forEach(b => {
   b.textContent = save.sound ? "🔊" : "🔇";
