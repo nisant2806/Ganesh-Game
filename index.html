@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -7,9 +8,12 @@
   <title>Modak Path — Connect Bappa to the Sweet</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="ambient" aria-hidden="true">
     <span>✦</span><span>✧</span><span>•</span><span>✦</span><span>•</span><span>✧</span>
@@ -20,9 +24,10 @@
       <p class="eyebrow">A FESTIVE PATH PUZZLE</p>
       <h1>MODAK<br><em>PATH</em></h1>
       <p class="tagline">Connect Bappa to the sweet.</p>
-      <div class="elephant-art" aria-hidden="true"><span>🐘</span><b>✦</b><i>✧</i></div>
+      <div class="elephant-art" aria-hidden="true"><span>🛕</span><b>✦</b><i>✧</i></div>
       <p class="levels-note">500 levels of Ganesh puzzle fun</p>
-      <div id="playerProfileCard" class="player-profile-bar" data-action="openLogin" role="button" tabindex="0" title="Click to edit profile">
+      <div id="playerProfileCard" class="player-profile-bar" data-action="openLogin" role="button" tabindex="0"
+        title="Click to edit profile">
         <div class="profile-avatar">👤</div>
         <div class="profile-meta">
           <strong id="homePlayerName">Guest Player</strong>
@@ -36,7 +41,8 @@
         <button class="button secondary" data-action="levels">▦ LEVELS</button>
         <button class="button text-button" data-action="howto">How to play <span>→</span></button>
       </div>
-      <div class="home-footer"><span>🪔 Ganpati Bappa Morya</span><button class="sound-toggle" data-action="sound" aria-label="Toggle sound">🔊</button></div>
+      <div class="home-footer"><span>🪔 Ganpati Bappa Morya</span><button class="sound-toggle" data-action="sound"
+          aria-label="Toggle sound">🔊</button></div>
     </section>
 
     <section id="gameScreen" class="screen game-screen hidden">
@@ -55,13 +61,15 @@
         <div class="pill-badge pill-level">Level <span id="levelNumber">5</span></div>
         <div class="pill-badge pill-timer" id="timerBadge" title="Timing">⏱️ <span id="gameTimer">00:00</span></div>
         <div class="pill-badge pill-moves">Moves: <span id="moveCount">0</span></div>
-        <div class="pill-badge pill-blocks" id="blocksBadge" title="Cover every block to win!">Blocks: <span id="blocksCount">1/13</span></div>
+        <div class="pill-badge pill-blocks" id="blocksBadge" title="Cover every block to win!">Blocks: <span
+            id="blocksCount">1/13</span></div>
         <div class="header-stars" id="headerStars">
           <span class="star lit">★</span><span class="star lit">★</span><span class="star lit">★</span>
         </div>
         <button class="round-reset-btn" data-action="reset" aria-label="Restart level" title="Restart level">
           <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
-            <path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>
+            <path
+              d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
           </svg>
         </button>
       </div>
@@ -81,8 +89,17 @@
     </section>
 
     <section id="levelsScreen" class="screen levels-screen hidden">
-      <header class="page-header"><button class="icon-button" data-action="home">←</button><div><p class="eyebrow">YOUR JOURNEY</p><h2>SELECT LEVEL</h2></div><span class="level-total">500</span></header>
-      <div class="journey-card"><div><strong id="journeyComplete">0</strong><span>levels complete</span></div><div class="journey-track"><span id="journeyBar"></span></div><div><strong id="journeyStars">0</strong><span>stars earned</span></div></div>
+      <header class="page-header"><button class="icon-button" data-action="home">←</button>
+        <div>
+          <p class="eyebrow">YOUR JOURNEY</p>
+          <h2>SELECT LEVEL</h2>
+        </div><span class="level-total">500</span>
+      </header>
+      <div class="journey-card">
+        <div><strong id="journeyComplete">0</strong><span>levels complete</span></div>
+        <div class="journey-track"><span id="journeyBar"></span></div>
+        <div><strong id="journeyStars">0</strong><span>stars earned</span></div>
+      </div>
       <div id="levelGroups" class="level-groups"></div>
     </section>
 
@@ -90,9 +107,13 @@
     <div id="overlay" class="overlay hidden" role="dialog" aria-modal="true">
       <div class="modal" id="completeModal">
         <div class="confetti" aria-hidden="true">✦　•　✧　•　✦</div>
-        <div class="modal-icon">🎉</div><p class="eyebrow">LEVEL COMPLETE</p><h2>Bappa reached<br>the sweet!</h2><p class="blessing">🐘 Ganpati Bappa Morya!</p>
+        <div class="modal-icon">🎉</div>
+        <p class="eyebrow">LEVEL COMPLETE</p>
+        <h2>Bappa reached<br>the sweet!</h2>
+        <p class="blessing">🐘 Ganpati Bappa Morya!</p>
         <div id="newBest" class="new-best hidden">🏆 NEW BEST TIME!</div>
-        <div id="resultRankBadge" class="rank-badge hidden">🏆 <span id="resultRankText">Rank #1 on Leaderboard!</span></div>
+        <div id="resultRankBadge" class="rank-badge hidden">🏆 <span id="resultRankText">Rank #1 on Leaderboard!</span>
+        </div>
         <div id="stars" class="stars">★★★</div>
         <div class="result-stats">
           <span><b id="resultMoves">0</b><small>MOVES</small></span>
@@ -115,9 +136,15 @@
         <p class="eyebrow">GET STARTED</p>
         <h2>How to play</h2>
         <div class="steps">
-          <div><b>1</b><span>🐘</span><p>Start at<br><strong>Ganesh Ji</strong></p></div>
-          <div><b>2</b><span>🪨</span><p>Must clear every<br><strong>obstacle first</strong></p></div>
-          <div><b>3</b><span>🍬</span><p>Then reach the<br><strong>sweet to win!</strong></p></div>
+          <div><b>1</b><span>🐘</span>
+            <p>Start at<br><strong>Ganesh Ji</strong></p>
+          </div>
+          <div><b>2</b><span>🪨</span>
+            <p>Must clear every<br><strong>obstacle first</strong></p>
+          </div>
+          <div><b>3</b><span>🍬</span>
+            <p>Then reach the<br><strong>sweet to win!</strong></p>
+          </div>
         </div>
         <button class="button primary" data-action="playFromHowto">LET'S PLAY <span>→</span></button>
       </div>
@@ -134,7 +161,8 @@
         <form id="loginForm" class="login-form">
           <div class="form-field">
             <label for="playerNameInput">Player Name <span class="req">*</span></label>
-            <input type="text" id="playerNameInput" name="playerName" placeholder="e.g. Aarav Sharma" maxlength="24" required autocomplete="name" />
+            <input type="text" id="playerNameInput" name="playerName" placeholder="e.g. Aarav Sharma" maxlength="24"
+              required autocomplete="name" />
           </div>
           <div class="form-field">
             <label for="playerStateSelect">Your State <span class="req">*</span></label>
@@ -224,4 +252,5 @@
   </main>
   <script src="app.js"></script>
 </body>
+
 </html>
