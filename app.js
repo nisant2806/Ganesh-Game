@@ -220,18 +220,63 @@ function renderLeaderboard() {
   const podiumEl = $("lbPodium");
   const listEl = $("lbList");
   const userBarEl = $("lbUserBar");
+  const isAll = (activeLbFilter === "all");
+
+  const timeHeader = $("lbTimeHeader");
+  if (timeHeader) {
+    timeHeader.textContent = isAll ? "AVG TIME" : "TIME";
+  }
 
   // Update active chips
   document.querySelectorAll(".lb-filter-chip").forEach(chip => {
     chip.classList.toggle("active", chip.dataset.filter === String(activeLbFilter));
   });
 
-  // Filter and sort entries by fastest timing (time ascending)
-  let entries = [...lb];
-  if (activeLbFilter !== "all") {
+  let entries = [];
+
+  if (isAll) {
+    // In All Levels mode: each player has one single entry with their average time across levels
+    const playerMap = new Map();
+    lb.forEach(item => {
+      const key = (item.name || "").trim().toLowerCase();
+      if (!key) return;
+      if (!playerMap.has(key)) {
+        playerMap.set(key, {
+          name: item.name,
+          state: item.state,
+          times: []
+        });
+      }
+      const p = playerMap.get(key);
+      p.times.push(item.time);
+      if (item.state) p.state = item.state;
+    });
+
+    entries = Array.from(playerMap.values()).map(p => {
+      const sum = p.times.reduce((a, b) => a + b, 0);
+      const avg = sum / p.times.length;
+      const formattedAvg = avg < 60 ? `${avg.toFixed(1)}s` : `${Math.floor(avg / 60)}m ${(avg % 60).toFixed(0)}s`;
+      return {
+        name: p.name,
+        state: p.state,
+        time: avg,
+        formattedTime: formattedAvg,
+        levelCount: p.times.length
+      };
+    });
+  } else {
+    // In specific level mode: list entries for that level
     const lvlNum = parseInt(activeLbFilter, 10);
-    entries = entries.filter(e => e.level === lvlNum);
+    entries = lb.filter(e => e.level === lvlNum).map(e => ({
+      name: e.name,
+      state: e.state,
+      time: e.time,
+      formattedTime: e.formattedTime,
+      levelCount: 1
+    }));
   }
+
+  // Sort strictly by fastest timing / average timing (time ascending)
   entries.sort((a, b) => a.time - b.time);
 
   // Render Podium (Top 3)
@@ -250,7 +295,7 @@ function renderLeaderboard() {
           <div class="podium-avatar">👤<span class="podium-medal">${s.medal}</span></div>
           <div class="podium-name" title="${s.item.name}">${s.item.name}</div>
           <div class="podium-state" title="${s.item.state}">📍 ${s.item.state}</div>
-          <div class="podium-time">⏱️ ${s.item.formattedTime}</div>
+          <div class="podium-time">⏱️ ${s.item.formattedTime}${isAll ? " avg" : ""}</div>
         </div>
       `;
     }).join("");
@@ -281,7 +326,7 @@ function renderLeaderboard() {
             <span class="lb-state-pill" title="${item.state}">📍 ${item.state}</span>
           </div>
           <div class="lb-time-col">
-            ⏱️ ${item.formattedTime}
+            ⏱️ ${item.formattedTime}${isAll && item.levelCount > 1 ? ` <small style="font-size:0.68rem;opacity:0.75;font-weight:600">(${item.levelCount} lvls)</small>` : ""}
           </div>
         </div>
       `;
@@ -295,12 +340,12 @@ function renderLeaderboard() {
       const userRank = entries.indexOf(userEntry) + 1;
       userBarEl.innerHTML = `
         <span>👤 <strong>${currentUser.name}</strong> (📍 ${currentUser.state})</span>
-        <span>Best: <strong>${userEntry.formattedTime}</strong> · Rank: <strong>#${userRank}</strong></span>
+        <span>${isAll ? "Avg" : "Best"}: <strong>${userEntry.formattedTime}</strong>${isAll && userEntry.levelCount > 1 ? ` (${userEntry.levelCount} lvls)` : ""} · Rank: <strong>#${userRank}</strong></span>
       `;
     } else {
       userBarEl.innerHTML = `
         <span>👤 <strong>${currentUser.name}</strong> (📍 ${currentUser.state})</span>
-        <span>Not ranked on this level yet · Complete to enter!</span>
+        <span>Not ranked in this view yet · Complete a level to enter!</span>
       `;
     }
   } else {
