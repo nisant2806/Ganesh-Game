@@ -168,7 +168,7 @@ const SEED_LEADERBOARD = [
   { id: "s3", name: "Rohan Gowda", state: "Karnataka", level: 1, time: 3.9, formattedTime: "3.9s", moves: 13, date: "Yesterday" },
   { id: "s4", name: "Ananya Sen", state: "West Bengal", level: 1, time: 4.6, formattedTime: "4.6s", moves: 14, date: "2 days ago" },
   { id: "s5", name: "Kabir Mehra", state: "Delhi", level: 1, time: 5.4, formattedTime: "5.4s", moves: 15, date: "3 days ago" },
-  
+
   { id: "s6", name: "Tanvi Rathore", state: "Rajasthan", level: 2, time: 3.8, formattedTime: "3.8s", moves: 14, date: "Today" },
   { id: "s7", name: "Vikram Gill", state: "Punjab", level: 2, time: 4.7, formattedTime: "4.7s", moves: 14, date: "Today" },
   { id: "s8", name: "Priya Nair", state: "Kerala", level: 2, time: 5.5, formattedTime: "5.5s", moves: 15, date: "Yesterday" },
@@ -186,7 +186,7 @@ function loadLeaderboard() {
   try {
     const raw = localStorage.getItem("modak-path-leaderboard");
     if (raw) return JSON.parse(raw);
-  } catch {}
+  } catch { }
   localStorage.setItem("modak-path-leaderboard", JSON.stringify(SEED_LEADERBOARD));
   return [...SEED_LEADERBOARD];
 }
@@ -418,7 +418,7 @@ let ytMantraPlayer = null;
 let ytApiReady = false;
 let userInteracted = false;
 
-window.onYouTubeIframeAPIReady = function() {
+window.onYouTubeIframeAPIReady = function () {
   ytApiReady = true;
   initYouTubePlayers();
 };
@@ -475,7 +475,7 @@ function initYouTubePlayers() {
         },
         events: {
           onReady: (e) => {
-            e.target.setVolume(30); // 30% Volume for Mantra
+            e.target.setVolume(25); // 25% Volume for Mantra
             if (save.audio && save.audio.mantra && userInteracted) {
               e.target.playVideo();
             }
@@ -969,9 +969,9 @@ function makePuzzle(n) {
       if (found) {
         const stats = evaluateScatter(path, rows, cols);
         let score = (stats.quad / 4) * 50 +
-                    (stats.obsRows / rows) * 30 +
-                    (stats.obsCols / cols) * 30 +
-                    (stats.turns / walkLen) * 40;
+          (stats.obsRows / rows) * 30 +
+          (stats.obsCols / cols) * 30 +
+          (stats.turns / walkLen) * 40;
 
         // Anti-clustering: prefer distributed scatter across the matrix
         if (stats.maxCluster > 3) score -= (stats.maxCluster - 3) * 45;
