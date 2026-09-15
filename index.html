@@ -41,8 +41,13 @@
         <button class="button secondary" data-action="levels">▦ LEVELS</button>
         <button class="button text-button" data-action="howto">How to play <span>→</span></button>
       </div>
-      <div class="home-footer"><span>🪔 Ganpati Bappa Morya</span><button class="sound-toggle" data-action="sound"
-          aria-label="Toggle sound">🔊</button></div>
+      <div class="creator-badge">
+        <span>Made with 🧡 by <strong>Nisant Kumar Tarai</strong></span>
+      </div>
+      <div class="home-footer">
+        <span>🪔 Ganpati Bappa Morya</span>
+        <button class="sound-toggle" data-action="openAudio" aria-label="Audio and Music Settings" title="Sound & Devotional Music Settings">🔊</button>
+      </div>
     </section>
 
     <section id="gameScreen" class="screen game-screen hidden">
@@ -51,20 +56,18 @@
         <div class="brand-small"><span>🕉️</span><strong>MODAK <em>PATH</em></strong></div>
         <div class="nav-right">
           <button class="icon-button" data-action="leaderboard" aria-label="Leaderboard" title="Leaderboard">🏆</button>
-          <button class="icon-button" data-action="sound" aria-label="Toggle sound">🔊</button>
+          <button class="icon-button" data-action="openAudio" aria-label="Audio settings" title="Sound & Music Settings">🔊</button>
           <button class="icon-button" data-action="levels" aria-label="Select level">▦</button>
         </div>
       </header>
 
-      <!-- Screenshot-matched Game Header Bar with Live Timer & Difficulty Indicator -->
+      <!-- Screenshot-matched Game Header Bar: Level | Timer | Moves | Difficulty | Stars | Reset -->
       <div class="game-header-bar">
         <div class="pill-badge pill-level">Level <span id="levelNumber">5</span></div>
-        <div class="pill-badge pill-difficulty" id="diffBadge" title="Level Difficulty">Medium</div>
         <div class="pill-badge pill-timer" id="timerBadge" title="Timing">⏱️ <span id="gameTimer">00:00</span></div>
         <div class="pill-badge pill-moves">Moves: <span id="moveCount">0</span></div>
-        <div class="pill-badge pill-blocks" id="blocksBadge" title="Cover every block to win!">Blocks: <span
-            id="blocksCount">1/13</span></div>
-        <div class="header-stars" id="headerStars">
+        <div class="pill-badge pill-difficulty" id="diffBadge" title="Level Difficulty">Medium</div>
+        <div class="header-stars" id="headerStars" title="Finish in ≤25s for 3★, ≤60s for 2★">
           <span class="star lit">★</span><span class="star lit">★</span><span class="star lit">★</span>
         </div>
         <button class="round-reset-btn" data-action="reset" aria-label="Restart level" title="Restart level">
@@ -251,7 +254,100 @@
         <div class="lb-user-bar" id="lbUserBar"></div>
       </div>
     </div>
+
+    <!-- Audio & Music Settings Modal -->
+    <div id="audioModal" class="overlay hidden" role="dialog" aria-modal="true">
+      <div class="modal audio-modal">
+        <button class="close-button" data-action="closeAudio" aria-label="Close audio settings">×</button>
+        <div class="modal-icon">🎵</div>
+        <p class="eyebrow">SOUND & DEVOTIONAL MUSIC</p>
+        <h2>Audio Settings</h2>
+        <p class="audio-subtitle">Dual-layer ambient background music & sacred mantras</p>
+
+        <div class="audio-card-group">
+          <!-- Background Music Layer (20% vol) -->
+          <div class="audio-card">
+            <div class="audio-card-header">
+              <div class="audio-info">
+                <span class="audio-icon">🪈</span>
+                <div>
+                  <strong>Background Ambient Music</strong>
+                  <small>Calm spiritual ambiance (20% Vol)</small>
+                </div>
+              </div>
+              <button class="audio-toggle-btn active" id="bgmToggleBtn" data-action="toggleBGM">ON 🔊</button>
+            </div>
+            <div class="audio-meta-row">
+              <span class="audio-tag">Auto-looping</span>
+              <span class="audio-vol-badge">Volume: 20%</span>
+            </div>
+          </div>
+
+          <!-- Devotional Mantra Layer (30% vol) -->
+          <div class="audio-card">
+            <div class="audio-card-header">
+              <div class="audio-info">
+                <span class="audio-icon">🕉️</span>
+                <div>
+                  <strong>Devotional Mantra Layer</strong>
+                  <small>Sacred Ganesh chants over music (30% Vol)</small>
+                </div>
+              </div>
+              <button class="audio-toggle-btn active" id="mantraToggleBtn" data-action="toggleMantra">ON 🔊</button>
+            </div>
+            
+            <div class="mantra-track-select">
+              <p class="section-label">Select Mantra Music:</p>
+              <div class="mantra-chips">
+                <label class="mantra-chip active" id="mantraChip1">
+                  <input type="radio" name="mantraTrack" value="sKofNltRivY" checked>
+                  <span class="chip-content">
+                    <b>✦ Mantra 1 (Default)</b>
+                    <small>Sacred Ganesh Dhun & Chants</small>
+                  </span>
+                </label>
+                <label class="mantra-chip" id="mantraChip2">
+                  <input type="radio" name="mantraTrack" value="TCOSGtzvuDc">
+                  <span class="chip-content">
+                    <b>✦ Mantra 2 (Devotional)</b>
+                    <small>Jai Ganesh Deva Aarti & Stuti</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+
+            <div class="audio-meta-row">
+              <span class="audio-tag">Auto-looping</span>
+              <span class="audio-vol-badge">Volume: 30%</span>
+            </div>
+          </div>
+
+          <!-- Sound Effects -->
+          <div class="audio-card sfx-card">
+            <div class="audio-card-header">
+              <div class="audio-info">
+                <span class="audio-icon">🔔</span>
+                <div>
+                  <strong>Sound Effects (SFX)</strong>
+                  <small>Steps, locks, and victory fanfares</small>
+                </div>
+              </div>
+              <button class="audio-toggle-btn active" id="sfxToggleBtn" data-action="toggleSFX">ON 🔊</button>
+            </div>
+          </div>
+        </div>
+
+        <button class="button primary audio-done-btn" data-action="closeAudio">DONE <span>✓</span></button>
+      </div>
+    </div>
+
+    <!-- Hidden YouTube Audio Players Host -->
+    <div id="yt-audio-host" style="position:fixed;width:1px;height:1px;left:-9999px;top:-9999px;opacity:0;pointer-events:none;" aria-hidden="true">
+      <div id="ytBgmPlayer"></div>
+      <div id="ytMantraPlayer"></div>
+    </div>
   </main>
+  <script src="https://www.youtube.com/iframe_api"></script>
   <script src="app.js"></script>
 </body>
 

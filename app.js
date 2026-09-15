@@ -1,7 +1,20 @@
 // Modak Path — Reference-Accurate Engine
 // Aesthetic: Slate stone obstacles with engraved mandala, Baby Ganesha start, Modak bowl end, mandatory 100% block visit rule.
 
-const defaultSave = { current: 1, completed: {}, hints: 3, sound: true };
+const defaultSave = {
+  current: 1,
+  completed: {},
+  hints: 3,
+  sound: true,
+  overallBestTime: null,
+  audio: {
+    bgm: true,
+    mantra: true,
+    mantraTrack: "sKofNltRivY",
+    sfx: true
+  }
+};
+
 let save = loadSave();
 let level = save.current;
 let puzzle = null;
@@ -11,7 +24,7 @@ let startedAt = 0;
 let timer = null;
 let audioCtx = null;
 
-// New state: 3 hints in every level, user profile, timing leaderboard
+// State: 3 hints in every level, user profile, timing leaderboard
 let levelHints = 3;
 let currentUser = loadUser();
 let pendingPlay = false;
@@ -21,7 +34,23 @@ const $ = id => document.getElementById(id);
 
 function loadSave() {
   try {
-    return { ...defaultSave, ...JSON.parse(localStorage.getItem("modak-path-save") || "{}") };
+    const raw = JSON.parse(localStorage.getItem("modak-path-save") || "{}");
+    const merged = {
+      ...defaultSave,
+      ...raw,
+      audio: { ...defaultSave.audio, ...(raw.audio || {}) }
+    };
+    if (merged.overallBestTime === undefined || merged.overallBestTime === null) {
+      if (merged.completed) {
+        const times = Object.values(merged.completed)
+          .map(c => Number(c.exactTime || c.time))
+          .filter(t => !isNaN(t) && t > 0);
+        if (times.length > 0) {
+          merged.overallBestTime = Math.min(...times);
+        }
+      }
+    }
+    return merged;
   } catch {
     return { ...defaultSave };
   }
@@ -87,12 +116,23 @@ function closeLogin() {
 }
 
 // ----------------------------------------------------
-// Live Stopwatch & Timer Formatting
+// Live Stopwatch, Real-Time Star Reduction & Timer Formatting
 // ----------------------------------------------------
 function formatTimer(sec) {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function updateHeaderStars(count) {
+  const starsEl = $("headerStars");
+  if (!starsEl) return;
+  const stars = starsEl.querySelectorAll(".star");
+  if (stars.length === 3) {
+    stars[0].className = `star ${count >= 1 ? "lit" : "unlit"}`;
+    stars[1].className = `star ${count >= 2 ? "lit" : "unlit"}`;
+    stars[2].className = `star ${count >= 3 ? "lit" : "unlit"}`;
+  }
 }
 
 function updateLiveTimer() {
@@ -102,6 +142,12 @@ function updateLiveTimer() {
   if (timerEl) {
     timerEl.textContent = formatTimer(elapsed);
   }
+  // Real-time star reduction based on elapsed time:
+  // <= 25s: 3 stars (★★★)
+  // 25s to 60s: 2 stars (★★☆)
+  // > 60s (1 min): 1 star (★☆☆)
+  const currentStars = elapsed <= 25 ? 3 : elapsed <= 60 ? 2 : 1;
+  updateHeaderStars(currentStars);
 }
 
 function updateHintHUD() {
@@ -356,9 +402,224 @@ function renderLeaderboard() {
   }
 }
 
-// Procedural Web Audio synthesizer
+// ----------------------------------------------------
+// Dual-Layer YouTube Audio Architecture & Sound Engine
+// Layer 1: Background Music (20% Vol) - Auto-looping
+// Layer 2: Devotional Mantra Layer (30% Vol) - Auto-looping with Track Switcher
+// ----------------------------------------------------
+const YOUTUBE_TRACKS = {
+  bgm: "LqPl7XPgpmI",
+  mantra1: "sKofNltRivY", // Default Mantra
+  mantra2: "TCOSGtzvuDc"  // Alternative Devotional Mantra
+};
+
+let ytBgmPlayer = null;
+let ytMantraPlayer = null;
+let ytApiReady = false;
+let userInteracted = false;
+
+window.onYouTubeIframeAPIReady = function() {
+  ytApiReady = true;
+  initYouTubePlayers();
+};
+
+function initYouTubePlayers() {
+  if (!window.YT || !window.YT.Player) return;
+
+  try {
+    if (!ytBgmPlayer && $("ytBgmPlayer")) {
+      ytBgmPlayer = new YT.Player("ytBgmPlayer", {
+        height: "1",
+        width: "1",
+        videoId: YOUTUBE_TRACKS.bgm,
+        playerVars: {
+          autoplay: 0,
+          loop: 1,
+          playlist: YOUTUBE_TRACKS.bgm,
+          controls: 0,
+          showinfo: 0,
+          disablekb: 1,
+          playsinline: 1
+        },
+        events: {
+          onReady: (e) => {
+            e.target.setVolume(20); // 20% Volume for BGM
+            if (save.audio && save.audio.bgm && userInteracted) {
+              e.target.playVideo();
+            }
+          },
+          onStateChange: (e) => {
+            // Auto-repeat when music finishes
+            if (e.data === YT.PlayerState.ENDED) {
+              e.target.playVideo();
+            }
+          }
+        }
+      });
+    }
+
+    if (!ytMantraPlayer && $("ytMantraPlayer")) {
+      const activeMantraId = (save.audio && save.audio.mantraTrack) ? save.audio.mantraTrack : YOUTUBE_TRACKS.mantra1;
+      ytMantraPlayer = new YT.Player("ytMantraPlayer", {
+        height: "1",
+        width: "1",
+        videoId: activeMantraId,
+        playerVars: {
+          autoplay: 0,
+          loop: 1,
+          playlist: activeMantraId,
+          controls: 0,
+          showinfo: 0,
+          disablekb: 1,
+          playsinline: 1
+        },
+        events: {
+          onReady: (e) => {
+            e.target.setVolume(30); // 30% Volume for Mantra
+            if (save.audio && save.audio.mantra && userInteracted) {
+              e.target.playVideo();
+            }
+          },
+          onStateChange: (e) => {
+            // Auto-repeat when music finishes
+            if (e.data === YT.PlayerState.ENDED) {
+              e.target.playVideo();
+            }
+          }
+        }
+      });
+    }
+  } catch (err) {
+    console.warn("YouTube player init error:", err);
+  }
+}
+
+function startAudioOnUserGesture() {
+  if (userInteracted) return;
+  userInteracted = true;
+
+  if (ytBgmPlayer && typeof ytBgmPlayer.playVideo === "function") {
+    ytBgmPlayer.setVolume(20);
+    if (save.audio.bgm) ytBgmPlayer.playVideo();
+    else ytBgmPlayer.pauseVideo();
+  }
+
+  if (ytMantraPlayer && typeof ytMantraPlayer.playVideo === "function") {
+    ytMantraPlayer.setVolume(30);
+    if (save.audio.mantra) ytMantraPlayer.playVideo();
+    else ytMantraPlayer.pauseVideo();
+  }
+}
+
+function toggleBGM() {
+  startAudioOnUserGesture();
+  save.audio.bgm = !save.audio.bgm;
+  persist();
+  updateAudioUI();
+
+  if (ytBgmPlayer && typeof ytBgmPlayer.playVideo === "function") {
+    if (save.audio.bgm) {
+      ytBgmPlayer.setVolume(20);
+      ytBgmPlayer.playVideo();
+    } else {
+      ytBgmPlayer.pauseVideo();
+    }
+  }
+}
+
+function toggleMantra() {
+  startAudioOnUserGesture();
+  save.audio.mantra = !save.audio.mantra;
+  persist();
+  updateAudioUI();
+
+  if (ytMantraPlayer && typeof ytMantraPlayer.playVideo === "function") {
+    if (save.audio.mantra) {
+      ytMantraPlayer.setVolume(30);
+      ytMantraPlayer.playVideo();
+    } else {
+      ytMantraPlayer.pauseVideo();
+    }
+  }
+}
+
+function switchMantraTrack(videoId) {
+  startAudioOnUserGesture();
+  save.audio.mantraTrack = videoId;
+  persist();
+  updateAudioUI();
+
+  if (ytMantraPlayer && typeof ytMantraPlayer.loadVideoById === "function") {
+    ytMantraPlayer.loadVideoById({
+      videoId: videoId,
+      startSeconds: 0
+    });
+    ytMantraPlayer.setVolume(30);
+    if (!save.audio.mantra) {
+      ytMantraPlayer.pauseVideo();
+    }
+  }
+}
+
+function toggleSFX() {
+  save.audio.sfx = !save.audio.sfx;
+  save.sound = save.audio.sfx;
+  persist();
+  updateAudioUI();
+}
+
+function openAudioModal() {
+  updateAudioUI();
+  $("audioModal")?.classList.remove("hidden");
+}
+
+function closeAudioModal() {
+  $("audioModal")?.classList.add("hidden");
+}
+
+function updateAudioUI() {
+  const bgmBtn = $("bgmToggleBtn");
+  if (bgmBtn) {
+    bgmBtn.textContent = save.audio.bgm ? "ON 🔊" : "MUTED 🔇";
+    bgmBtn.className = `audio-toggle-btn ${save.audio.bgm ? "active" : "muted"}`;
+  }
+
+  const mantraBtn = $("mantraToggleBtn");
+  if (mantraBtn) {
+    mantraBtn.textContent = save.audio.mantra ? "ON 🔊" : "MUTED 🔇";
+    mantraBtn.className = `audio-toggle-btn ${save.audio.mantra ? "active" : "muted"}`;
+  }
+
+  const sfxBtn = $("sfxToggleBtn");
+  if (sfxBtn) {
+    sfxBtn.textContent = save.audio.sfx ? "ON 🔊" : "MUTED 🔇";
+    sfxBtn.className = `audio-toggle-btn ${save.audio.sfx ? "active" : "muted"}`;
+  }
+
+  const activeTrack = save.audio.mantraTrack || YOUTUBE_TRACKS.mantra1;
+  const isMantra1 = (activeTrack === YOUTUBE_TRACKS.mantra1);
+  const chip1 = $("mantraChip1");
+  const chip2 = $("mantraChip2");
+  if (chip1) {
+    chip1.classList.toggle("active", isMantra1);
+    const rad = chip1.querySelector("input");
+    if (rad) rad.checked = isMantra1;
+  }
+  if (chip2) {
+    chip2.classList.toggle("active", !isMantra1);
+    const rad = chip2.querySelector("input");
+    if (rad) rad.checked = !isMantra1;
+  }
+
+  const allMuted = !save.audio.bgm && !save.audio.mantra && !save.audio.sfx;
+  document.querySelectorAll('[data-action="sound"], [data-action="openAudio"]').forEach(b => {
+    b.textContent = allMuted ? "🔇" : "🔊";
+  });
+}
+
+// Procedural Web Audio synthesizer for SFX
 function playSound(type) {
-  if (!save.sound) return;
+  if (!save.audio?.sfx && !save.sound) return;
   try {
     if (!audioCtx) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -785,6 +1046,7 @@ function startGame(n = level) {
   drawing = false;
   startedAt = Date.now();
   clearInterval(timer);
+  updateHeaderStars(3);
   updateLiveTimer();
   timer = setInterval(updateLiveTimer, 200);
 
@@ -805,6 +1067,7 @@ function startGame(n = level) {
   updateHUD();
   renderBoard();
   drawPath();
+  startAudioOnUserGesture();
 }
 
 function renderBoard() {
@@ -1055,10 +1318,21 @@ function complete() {
   const timeSecRound = Math.round(timeSec);
   const formattedTime = timeSec < 60 ? `${timeSec.toFixed(1)}s` : `${Math.floor(timeSec / 60)}m ${(timeSec % 60).toFixed(0)}s`;
 
-  const old = save.completed[level];
-  const optimalMoves = puzzle.totalBlocks - 1;
-  const stars = moves === optimalMoves ? 3 : moves <= optimalMoves + 4 ? 2 : 1;
+  // Timing Star Rules:
+  // <= 25s: 3 stars (★★★)
+  // 25s - 60s: 2 stars (★★☆)
+  // > 60s (1 min): 1 star (★☆☆)
+  const stars = timeSec <= 25 ? 3 : timeSec <= 60 ? 2 : 1;
 
+  // Track overall personal best time across all levels played
+  const currentExact = Number(timeSec.toFixed(1));
+  let isNewOverallBest = false;
+  if (save.overallBestTime === null || save.overallBestTime === undefined || currentExact < save.overallBestTime) {
+    save.overallBestTime = currentExact;
+    isNewOverallBest = true;
+  }
+
+  const old = save.completed[level];
   save.completed[level] = { stars, moves, time: timeSecRound, exactTime: timeSec.toFixed(1) };
   if (level < 500) {
     save.current = Math.max(save.current, level + 1);
@@ -1070,9 +1344,9 @@ function complete() {
 
   $("resultMoves").textContent = moves;
   $("resultTime").textContent = formattedTime;
-  $("resultBest").textContent = old?.exactTime ? `${old.exactTime}s` : formattedTime;
+  $("resultBest").textContent = save.overallBestTime ? `${save.overallBestTime}s` : formattedTime;
   $("stars").textContent = "★".repeat(stars) + "☆".repeat(3 - stars);
-  $("newBest").classList.toggle("hidden", !lbResult.isNewBestTime);
+  $("newBest").classList.toggle("hidden", !isNewOverallBest);
 
   const rankBadge = $("resultRankBadge");
   if (rankBadge) {
@@ -1107,6 +1381,7 @@ function reset() {
   levelHints = 3; // Reset hints to 3 on every level reset
   updateHintHUD();
   startedAt = Date.now();
+  updateHeaderStars(3); // Reset to 3 lit stars
   updateLiveTimer();
   playSound("step");
   drawPath();
@@ -1196,6 +1471,7 @@ function openLevels() {
 
 // Global Event Listeners
 document.addEventListener("pointerdown", e => {
+  startAudioOnUserGesture();
   if (e.target.closest("#board")) {
     onPointerDown(e);
   }
@@ -1205,8 +1481,17 @@ document.addEventListener("pointermove", onPointerMove, { passive: false });
 document.addEventListener("pointerup", stopDrawing);
 document.addEventListener("pointercancel", stopDrawing);
 
-// Tap cell support
+// Radio change for Mantra track
+document.addEventListener("change", e => {
+  if (e.target.name === "mantraTrack") {
+    switchMantraTrack(e.target.value);
+  }
+});
+
+// Tap and Action handling
 document.addEventListener("click", e => {
+  startAudioOnUserGesture();
+
   const cell = e.target.closest(".cell");
   if (cell && !drawing) {
     const r = parseInt(cell.dataset.r, 10);
@@ -1230,6 +1515,12 @@ document.addEventListener("click", e => {
   if (action === "closeLogin") closeLogin();
   if (action === "leaderboard") openLeaderboard("all");
   if (action === "closeLeaderboard") closeLeaderboard();
+  if (action === "openAudio" || action === "sound") openAudioModal();
+  if (action === "closeAudio") closeAudioModal();
+  if (action === "toggleBGM") toggleBGM();
+  if (action === "toggleMantra") toggleMantra();
+  if (action === "toggleSFX") toggleSFX();
+
   if (action === "playFromHowto") {
     $("howtoModal").classList.add("hidden");
     if (!currentUser) {
@@ -1260,13 +1551,6 @@ document.addEventListener("click", e => {
     $("overlay").classList.add("hidden");
     startGame(Math.min(500, level + 1));
   }
-  if (action === "sound") {
-    save.sound = !save.sound;
-    persist();
-    document.querySelectorAll('[data-action="sound"]').forEach(b => {
-      b.textContent = save.sound ? "🔊" : "🔇";
-    });
-  }
 });
 
 document.addEventListener("keydown", e => {
@@ -1278,6 +1562,7 @@ document.addEventListener("keydown", e => {
     $("howtoModal").classList.add("hidden");
     $("loginModal").classList.add("hidden");
     $("leaderboardModal").classList.add("hidden");
+    closeAudioModal();
   }
 });
 
@@ -1332,7 +1617,5 @@ if (lbSelect) {
 // Initialize UI
 updateProfileUI();
 updateHintHUD();
+updateAudioUI();
 $("playLabel").textContent = save.current > 1 ? `CONTINUE · ${save.current}` : "PLAY";
-document.querySelectorAll('[data-action="sound"]').forEach(b => {
-  b.textContent = save.sound ? "🔊" : "🔇";
-});
