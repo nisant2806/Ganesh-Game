@@ -420,14 +420,45 @@ function seeded(n) {
   };
 }
 
-// Dimensions for level: 4x4 up to 5x5 / 6x6
+// Dimensions for level: scales progressively up to 7x8 for higher difficulty
 function dimsFor(n) {
-  if (n <= 2) return { rows: 4, cols: 4 };
-  if (n <= 12) return { rows: 4, cols: 5 }; // Level 5 matches the 4x5 reference screenshot
+  if (n <= 5) return { rows: 4, cols: 4 };
+  if (n <= 15) return { rows: 4, cols: 5 }; // Level 5 matches 4x5 reference screenshot
   if (n <= 35) return { rows: 5, cols: 5 };
-  if (n <= 80) return { rows: 5, cols: 6 };
-  if (n <= 200) return { rows: 6, cols: 6 };
-  return { rows: 6, cols: 7 };
+  if (n <= 50) return { rows: 5, cols: 6 };
+  if (n <= 100) return { rows: 6, cols: 6 }; // Levels 51-100: 6x6 Hard matrix
+  if (n <= 250) return { rows: 6, cols: 7 }; // Levels 101-250: 6x7 Expert matrix
+  if (n <= 400) return { rows: 7, cols: 7 }; // Levels 251-400: 7x7 Master matrix
+  return { rows: 7, cols: 8 };                // Levels 401-500: 7x8 Legend matrix
+}
+
+// Difficulty Tier configuration and visual metadata
+function getDifficultyTier(n) {
+  if (n <= 20) {
+    return { name: "Easy", icon: "🟢", className: "diff-easy", tierName: "Apprentice", modalClass: "" };
+  } else if (n <= 50) {
+    return { name: "Medium", icon: "🟡", className: "diff-medium", tierName: "Challenger", modalClass: "" };
+  } else if (n <= 100) {
+    return { name: "Hard 🔥", icon: "🔥", className: "diff-hard", tierName: "Hard (Scattered Obstacles)", modalClass: "hard-tier" };
+  } else if (n <= 250) {
+    return { name: "Expert ⚡", icon: "⚡", className: "diff-expert", tierName: "Expert Labyrinth", modalClass: "expert-tier" };
+  } else if (n <= 400) {
+    return { name: "Master 👑", icon: "👑", className: "diff-master", tierName: "Master Maze", modalClass: "master-tier" };
+  } else {
+    return { name: "Legend 🌟", icon: "🌟", className: "diff-legend", tierName: "Grandmaster Legend", modalClass: "legend-tier" };
+  }
+}
+
+// Target grey obstacle block density:
+// Levels <= 50: modest density (15% - 28%) for accessible progression
+// Levels > 50: increased density (30% - 44%) with randomly scattered grey obstacle blocks
+function getObstacleConfig(n, totalCells) {
+  if (n <= 10) return { minDensity: 0.15, maxDensity: 0.22 };
+  if (n <= 30) return { minDensity: 0.20, maxDensity: 0.26 };
+  if (n <= 50) return { minDensity: 0.22, maxDensity: 0.28 };
+  if (n <= 100) return { minDensity: 0.30, maxDensity: 0.38 };
+  if (n <= 250) return { minDensity: 0.33, maxDensity: 0.40 };
+  return { minDensity: 0.35, maxDensity: 0.44 };
 }
 
 // SVGs for game board
@@ -503,121 +534,132 @@ const SVGS = {
     </svg>`
 };
 
-// Generate guaranteed solvable puzzle where obstacles are SCATTERED throughout the entire grid.
-// Evaluates candidate self-avoiding paths for spatial scatter:
-// - Obstacles distributed across all 4 quadrants
-// - Spread across multiple rows and columns
-// - Clumps of 3+ strictly avoided, keeping obstacles as isolated or pairwise stones like Image 2
+// Spatial evaluation of candidate self-avoiding paths:
+// Ensures grey obstacle blocks are randomly and widely scattered across all quadrants,
+// rows, and columns of the matrix to create rich, challenging labyrinth paths.
+function evaluateScatter(path, rows, cols) {
+  const pSet = new Set(path.map(p => `${p.r},${p.c}`));
+  const obs = [];
+  const rowCounts = Array(rows).fill(0);
+  const colCounts = Array(cols).fill(0);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (!pSet.has(`${r},${c}`)) {
+        obs.push({ r, c });
+        rowCounts[r]++;
+        colCounts[c]++;
+      }
+    }
+  }
+
+  const obsSet = new Set(obs.map(p => `${p.r},${p.c}`));
+
+  let maxCluster = 0;
+  let adjPairs = 0;
+  const visited = new Set();
+  for (const p of obs) {
+    const k = `${p.r},${p.c}`;
+    if (visited.has(k)) continue;
+    let sz = 0;
+    const q = [p];
+    visited.add(k);
+    while (q.length) {
+      const curr = q.shift();
+      sz++;
+      for (const [dr, dc] of [[0, 1], [1, 0], [0, -1], [-1, 0]]) {
+        const nr = curr.r + dr, nc = curr.c + dc;
+        const nk = `${nr},${nc}`;
+        if (obsSet.has(nk)) {
+          if (curr.r < nr || (curr.r === nr && curr.c < nc)) adjPairs++;
+          if (!visited.has(nk)) {
+            visited.add(nk);
+            q.push({ r: nr, c: nc });
+          }
+        }
+      }
+    }
+    if (sz > maxCluster) maxCluster = sz;
+  }
+
+  const midR = (rows - 1) / 2;
+  const midC = (cols - 1) / 2;
+  let tl = 0, tr = 0, bl = 0, br = 0;
+  for (const p of obs) {
+    if (p.r <= midR && p.c <= midC) tl++;
+    if (p.r <= midR && p.c >= midC) tr++;
+    if (p.r >= midR && p.c <= midC) bl++;
+    if (p.r >= midR && p.c >= midC) br++;
+  }
+  const quad = (tl > 0 ? 1 : 0) + (tr > 0 ? 1 : 0) + (bl > 0 ? 1 : 0) + (br > 0 ? 1 : 0);
+
+  const obsRows = rowCounts.filter(cnt => cnt > 0).length;
+  const obsCols = colCounts.filter(cnt => cnt > 0).length;
+
+  // Measure path direction changes (turns) for winding labyrinth complexity
+  let turns = 0;
+  for (let i = 1; i < path.length - 1; i++) {
+    const dr1 = path[i].r - path[i - 1].r;
+    const dc1 = path[i].c - path[i - 1].c;
+    const dr2 = path[i + 1].r - path[i].r;
+    const dc2 = path[i + 1].c - path[i].c;
+    if (dr1 !== dr2 || dc1 !== dc2) turns++;
+  }
+
+  return {
+    obsCount: obs.length,
+    maxCluster,
+    adjPairs,
+    quad,
+    obsRows,
+    obsCols,
+    turns,
+    obs
+  };
+}
+
+// Generate guaranteed solvable puzzle with random grey obstacle blocks scattered throughout the matrix.
+// For levels > 50: increases matrix grid size and grey block density, distributing obstacles across the matrix.
 function makePuzzle(n) {
   const { rows, cols } = dimsFor(n);
   const totalCells = rows * cols;
   const start = { r: 0, c: 0 };
   const end = { r: rows - 1, c: cols - 1 };
 
-  // Parity rule: Start (0,0) is parity 0.
-  // A path of length L ending on (end.r, end.c) requires:
-  // L % 2 !== (end.r + end.c) % 2
+  // Parity check: (end.r + end.c) parity matches path step count
   const endParity = (end.r + end.c) % 2;
   const reqLenParity = (endParity === 1) ? 0 : 1;
 
-  // Target obstacle density: ~22% to 35% of total cells
-  const minObs = Math.max(3, Math.floor(totalCells * 0.22));
-  const maxObs = Math.max(minObs + 1, Math.floor(totalCells * 0.35));
+  const cfg = getObstacleConfig(n, totalCells);
+  const minObs = Math.max(2, Math.floor(totalCells * cfg.minDensity));
+  const maxObs = Math.max(minObs + 1, Math.floor(totalCells * cfg.maxDensity));
 
   const candidateLengths = [];
-  for (let obs = minObs; obs <= maxObs; obs++) {
+  for (let obs = maxObs; obs >= minObs; obs--) {
     const walkLen = totalCells - obs;
     if (walkLen % 2 === reqLenParity && walkLen >= rows + cols - 1) {
       candidateLengths.push(walkLen);
     }
   }
 
-  // Prioritize lengths with ideal ~30% obstacle density
-  candidateLengths.sort((a, b) => {
-    const obsA = totalCells - a;
-    const obsB = totalCells - b;
-    const ideal = totalCells * 0.30;
-    return Math.abs(obsA - ideal) - Math.abs(obsB - ideal);
-  });
-
-  function evaluate(path) {
-    const pSet = new Set(path.map(p => `${p.r},${p.c}`));
-    const obs = [];
-    const rowCounts = Array(rows).fill(0);
-    const colCounts = Array(cols).fill(0);
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        if (!pSet.has(`${r},${c}`)) {
-          obs.push({ r, c });
-          rowCounts[r]++;
-          colCounts[c]++;
-        }
-      }
-    }
-    const obsSet = new Set(obs.map(p => `${p.r},${p.c}`));
-
-    let maxCluster = 0;
-    let adjPairs = 0;
-    const visited = new Set();
-    for (const p of obs) {
-      const k = `${p.r},${p.c}`;
-      if (visited.has(k)) continue;
-      let sz = 0;
-      const q = [p];
-      visited.add(k);
-      while (q.length) {
-        const curr = q.shift();
-        sz++;
-        for (const [dr, dc] of [[0,1],[1,0],[0,-1],[-1,0]]) {
-          const nk = `${curr.r + dr},${curr.c + dc}`;
-          if (obsSet.has(nk)) {
-            if (curr.r < curr.r + dr || (curr.r === curr.r + dr && curr.c < curr.c + dc)) {
-              adjPairs++;
-            }
-            if (!visited.has(nk)) {
-              visited.add(nk);
-              q.push({ r: curr.r + dr, c: curr.c + dc });
-            }
-          }
-        }
-      }
-      if (sz > maxCluster) maxCluster = sz;
-    }
-
-    const midR = (rows - 1) / 2;
-    const midC = (cols - 1) / 2;
-    let tl = 0, tr = 0, bl = 0, br = 0;
-    for (const p of obs) {
-      if (p.r <= midR && p.c <= midC) tl++;
-      if (p.r <= midR && p.c >= midC) tr++;
-      if (p.r >= midR && p.c <= midC) bl++;
-      if (p.r >= midR && p.c >= midC) br++;
-    }
-    const quad = (tl > 0 ? 1 : 0) + (tr > 0 ? 1 : 0) + (bl > 0 ? 1 : 0) + (br > 0 ? 1 : 0);
-
-    const obsRows = rowCounts.filter(cnt => cnt > 0).length;
-    const obsCols = colCounts.filter(cnt => cnt > 0).length;
-    const maxInRow = Math.max(...rowCounts);
-    const maxInCol = Math.max(...colCounts);
-
-    return { maxCluster, adjPairs, quad, obsRows, obsCols, maxInRow, maxInCol, count: obs.length, obs };
-  }
-
   let bestSol = null;
   let bestScore = -Infinity;
 
   for (const walkLen of candidateLengths) {
-    for (let attempt = 0; attempt < 80; attempt++) {
+    for (let attempt = 0; attempt < 50; attempt++) {
       const rand = seeded((n * 104729 + attempt * 3571 + walkLen * 101) % 233280);
-      const visited = new Set();
+      const visited = new Uint8Array(rows * cols);
       const path = [];
       let found = false;
+      let stepCount = 0;
 
       function dfs(r, c) {
         if (found) return;
-        const key = `${r},${c}`;
-        visited.add(key);
+        stepCount++;
+        if (stepCount > 8000) return;
+
+        const idx = r * cols + c;
+        visited[idx] = 1;
         path.push({ r, c });
 
         if (r === end.r && c === end.c) {
@@ -625,14 +667,14 @@ function makePuzzle(n) {
             found = true;
             return;
           }
-          visited.delete(key);
+          visited[idx] = 0;
           path.pop();
           return;
         }
 
         const dist = (end.r - r) + (end.c - c);
         if (dist > walkLen - path.length) {
-          visited.delete(key);
+          visited[idx] = 0;
           path.pop();
           return;
         }
@@ -648,14 +690,15 @@ function makePuzzle(n) {
         for (const [dr, dc] of dirs) {
           const nr = r + dr, nc = c + dc;
           if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
-          if (visited.has(`${nr},${nc}`)) continue;
+          const nidx = nr * cols + nc;
+          if (visited[nidx]) continue;
           if (nr === end.r && nc === end.c && path.length < walkLen - 1) continue;
           dfs(nr, nc);
           if (found) break;
         }
 
         if (!found) {
-          visited.delete(key);
+          visited[idx] = 0;
           path.pop();
         }
       }
@@ -663,32 +706,29 @@ function makePuzzle(n) {
       dfs(start.r, start.c);
 
       if (found) {
-        const stats = evaluate(path);
-        let score = (stats.quad / 4) * 60 +
-                    (stats.obsRows / rows) * 40 +
-                    (stats.obsCols / cols) * 40;
+        const stats = evaluateScatter(path, rows, cols);
+        let score = (stats.quad / 4) * 50 +
+                    (stats.obsRows / rows) * 30 +
+                    (stats.obsCols / cols) * 30 +
+                    (stats.turns / walkLen) * 40;
 
-        // Anti-clustering: reward isolated stones, penalize large clumps
-        if (stats.maxCluster > 2) score -= 250;
-        else if (stats.maxCluster === 1) score += 70;
-
-        if (stats.maxInRow > 2) score -= 120;
-        if (stats.maxInCol > 2) score -= 120;
-
-        score -= stats.adjPairs * 25;
+        // Anti-clustering: prefer distributed scatter across the matrix
+        if (stats.maxCluster > 3) score -= (stats.maxCluster - 3) * 45;
+        if (stats.obsCount >= minObs) score += 20;
 
         if (score > bestScore) {
           bestScore = score;
           bestSol = [...path];
-          if (stats.maxCluster <= 2 && stats.quad === 4 && stats.obsRows >= rows - 1 && stats.obsCols >= cols - 1 && stats.maxInRow <= 2 && stats.maxInCol <= 2 && stats.adjPairs <= 2) {
+          if (stats.quad === 4 && stats.maxCluster <= 3 && stats.obsRows >= rows - 1 && stats.obsCols >= cols - 1) {
             break;
           }
         }
       }
     }
+    if (bestSol && bestScore >= 110) break;
   }
 
-  // Guaranteed fallback: Snake boustrophedon
+  // Guaranteed fallback: Snake path
   if (!bestSol) {
     bestSol = [];
     for (let r = 0; r < rows; r++) {
@@ -727,7 +767,8 @@ function makePuzzle(n) {
     walkable,
     obstacles,
     watermarks,
-    totalBlocks: bestSol.length
+    totalBlocks: bestSol.length,
+    difficulty: getDifficultyTier(n)
   };
 }
 
@@ -753,8 +794,15 @@ function startGame(n = level) {
   show("gameScreen");
   $("levelNumber").textContent = level;
   $("moveCount").textContent = 0;
-  updateHUD();
 
+  // Update Difficulty Pill in Header
+  const diffBadge = $("diffBadge");
+  if (diffBadge && puzzle.difficulty) {
+    diffBadge.textContent = puzzle.difficulty.name;
+    diffBadge.className = `pill-badge pill-difficulty ${puzzle.difficulty.className}`;
+  }
+
+  updateHUD();
   renderBoard();
   drawPath();
 }
@@ -1032,6 +1080,15 @@ function complete() {
     $("resultRankText").textContent = `Rank #${lbResult.rank} on Leaderboard!`;
   }
 
+  // Update Difficulty Cleared Badge in Modal
+  const tier = puzzle?.difficulty || getDifficultyTier(level);
+  const resDiff = $("resultDiffBadge");
+  if (resDiff) {
+    resDiff.textContent = `${tier.icon} ${tier.name} Cleared!`;
+    resDiff.className = `diff-result-badge ${tier.modalClass}`;
+    resDiff.classList.remove("hidden");
+  }
+
   $("overlay").classList.remove("hidden");
 }
 
@@ -1092,12 +1149,27 @@ function openLevels() {
   groups.innerHTML = "";
 
   for (let g = 0; g < 10; g++) {
+    const startLvl = g * 50 + 1;
+    const endLvl = (g + 1) * 50;
+    const tier = getDifficultyTier(startLvl);
+    let tierClass = "tier-easy";
+    if (startLvl > 50 && startLvl <= 100) tierClass = "tier-hard";
+    else if (startLvl > 100 && startLvl <= 250) tierClass = "tier-expert";
+    else if (startLvl > 250 && startLvl <= 400) tierClass = "tier-master";
+    else if (startLvl > 400) tierClass = "tier-legend";
+
     const wrap = document.createElement("section");
     wrap.className = "level-group";
-    wrap.innerHTML = `<h3>${g * 50 + 1} — ${(g + 1) * 50}</h3><div class="level-grid"></div>`;
+    wrap.innerHTML = `
+      <div class="level-group-header">
+        <h3>${startLvl} — ${endLvl}</h3>
+        <span class="level-group-tier ${tierClass}">${tier.name}</span>
+      </div>
+      <div class="level-grid"></div>
+    `;
     const grid = wrap.querySelector(".level-grid");
 
-    for (let n = g * 50 + 1; n <= g * 50 + 50; n++) {
+    for (let n = startLvl; n <= endLvl; n++) {
       const b = document.createElement("button");
       const done = save.completed[n];
       const locked = n > Math.max(1, save.current);

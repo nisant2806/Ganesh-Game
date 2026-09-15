@@ -56,9 +56,10 @@
         </div>
       </header>
 
-      <!-- Screenshot-matched Game Header Bar with Live Timer -->
+      <!-- Screenshot-matched Game Header Bar with Live Timer & Difficulty Indicator -->
       <div class="game-header-bar">
         <div class="pill-badge pill-level">Level <span id="levelNumber">5</span></div>
+        <div class="pill-badge pill-difficulty" id="diffBadge" title="Level Difficulty">Medium</div>
         <div class="pill-badge pill-timer" id="timerBadge" title="Timing">⏱️ <span id="gameTimer">00:00</span></div>
         <div class="pill-badge pill-moves">Moves: <span id="moveCount">0</span></div>
         <div class="pill-badge pill-blocks" id="blocksBadge" title="Cover every block to win!">Blocks: <span
@@ -114,6 +115,7 @@
         <div id="newBest" class="new-best hidden">🏆 NEW BEST TIME!</div>
         <div id="resultRankBadge" class="rank-badge hidden">🏆 <span id="resultRankText">Rank #1 on Leaderboard!</span>
         </div>
+        <div id="resultDiffBadge" class="diff-result-badge hidden">🔥 Hard Level Cleared</div>
         <div id="stars" class="stars">★★★</div>
         <div class="result-stats">
           <span><b id="resultMoves">0</b><small>MOVES</small></span>
